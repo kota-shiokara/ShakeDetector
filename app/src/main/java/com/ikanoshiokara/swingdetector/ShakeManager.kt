@@ -8,8 +8,9 @@ import android.hardware.SensorManager
 import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlinx.coroutines.*
 
-class SwingManager(context: Context, listener: SwingListener) {
+class ShakeManager(context: Context, listener: ShakeListener) {
     private val mContext = context
     private val mListener = listener
     private val mSensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -27,10 +28,13 @@ class SwingManager(context: Context, listener: SwingListener) {
     private var mOldLinearAccelZ: Float = 0.0f
 
     //各種フラグ
-    private var mGestureType: Int = GESTURE_TYPE_NONE
+    private var mGestureType: Int = 0
     private var mSlashFlag: Boolean = false
     private var mShakeAfterFlag: Boolean = false
-    private var mSwingDetecting: Boolean = false
+    private var mShakeDetecting: Boolean = false
+
+    private var mTmpPoint: Float = 0.0f
+    private var mMountPoints: MutableList<Float> = mutableListOf()
 
 
     //定数
@@ -41,12 +45,14 @@ class SwingManager(context: Context, listener: SwingListener) {
         private const val GESTURE_TYPE_SLASH_RIGHT: Int = 2
         private const val GESTURE_TYPE_SLASH_UP: Int = 3
         private const val GESTURE_TYPE_SLASH_DOWN: Int = 4
-        private const val GESTURE_TYPE_SWING: Int = 5
+        private const val GESTURE_TYPE_SHAKE: Int = 5
 
         // スラッシュのしきい値となる加速度
         private const val SLASH_ACCEL: Float = 40.0f
-        // Swingの検出閾値
-        private const val SWING_ACCEL: Float = 15.0f
+        // Shakeの検出閾値
+        private const val SHAKE_ACCEL: Float = 15.0f
+        // 待機時間
+        private const val NON_DETECTION_TIME: Long = 600
     }
 
     fun startDetection(){
@@ -63,7 +69,7 @@ class SwingManager(context: Context, listener: SwingListener) {
         }
     }
 
-    public fun stopDetection(){
+    fun stopDetection(){
         mSensorManager.unregisterListener(mAccelListener)
     }
 
@@ -82,7 +88,7 @@ class SwingManager(context: Context, listener: SwingListener) {
                 mLinearAccelTotal = calcVectorLength(mLinearAccelX, mLinearAccelY, mLinearAccelZ)
                 if(mLinearAccelTotal > SLASH_ACCEL){
                     if (!mSlashFlag && !mShakeAfterFlag && mGestureType == GESTURE_TYPE_NONE){
-                        //重力の角度
+                        //slashの角度
                         val gravityAngle: Int = Math.toDegrees(atan2(mGravityZ, mGravityX).toDouble()).toInt()
                         val deviceRoll = 90 - gravityAngle
 
@@ -107,25 +113,50 @@ class SwingManager(context: Context, listener: SwingListener) {
                                 mGestureType = GESTURE_TYPE_SLASH_RIGHT
                             }
                         }
+
                         mSlashFlag = true
+                        GlobalScope.launch{
+                            delay(NON_DETECTION_TIME)
+                            mSlashFlag = false
+                        }
                     }
                 }
 
-                if (mLinearAccelTotal > SWING_ACCEL && !mSwingDetecting) {
-                    mSwingDetecting = true
+                //待機開始
+                if (mLinearAccelTotal > SHAKE_ACCEL && !mShakeDetecting) {
+                    mShakeDetecting = true
+                    mMountPoints = mutableListOf()
+                    mTmpPoint = 1.0f
                 }
-                else if (mLinearAccelTotal < SWING_ACCEL && mSwingDetecting){
-                    mSwingDetecting = false
-                    if(mGestureType != GESTURE_TYPE_SWING){
-                        mListener.onSwingDetected(mGestureType, 1)
+                //slash検知(onShakeDetectedに投げる)
+                else if (mLinearAccelTotal < SHAKE_ACCEL && mShakeDetecting){
+                    mShakeDetecting = false
+                    if(mGestureType != GESTURE_TYPE_SHAKE){
+                        mListener.onGestureDetected(mGestureType, 1)
                     }
                     mGestureType = GESTURE_TYPE_NONE
                     mShakeAfterFlag = true
+                    GlobalScope.launch{
+                        delay(NON_DETECTION_TIME)
+                        mShakeAfterFlag = false
+                    }
                 }
 
-                if (mSwingDetecting){
+                //待機中
+                if (mShakeDetecting){
                     if (mOldLinearAccelZ > mLinearAccelZ && mLinearAccelZ > 0) {
+                        if(mTmpPoint != 0.0f && mLinearAccelZ > mTmpPoint){
+                            mTmpPoint = mLinearAccelZ
+                        }
+                    }
+                    if(mLinearAccelZ < 0 && mTmpPoint > 2){
+                        mMountPoints.add(mTmpPoint)
+                        mTmpPoint = 1.0f
 
+                        if(mMountPoints.size > 2){
+                            mGestureType = GESTURE_TYPE_SHAKE
+                            mListener.onGestureDetected(mGestureType, mMountPoints.size)
+                        }
                     }
                 }
                 mOldLinearAccelZ = mLinearAccelZ
@@ -144,8 +175,8 @@ class SwingManager(context: Context, listener: SwingListener) {
         return sqrt(a.pow(2.0) + b.pow(2.0) + c.pow(2.0)).toFloat()
     }
 
-    interface SwingListener{
-        fun onSwingDetected(swingType:Int, swingCount: Int)
-        fun onMessage(message: String)
+    interface ShakeListener{
+        fun onGestureDetected(ShakeType:Int, ShakeCount: Int)
+        //fun onMessage(message: String)
     }
 }
