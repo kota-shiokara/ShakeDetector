@@ -10,7 +10,7 @@ android {
     buildToolsVersion "30.0.2"
 
     defaultConfig {
-        applicationId "com.ikanoshiokara.swingdetector"
+        applicationId "com.ikanoshiokara.shakedetector"
         minSdkVersion 26
         targetSdkVersion 30
         versionCode 1

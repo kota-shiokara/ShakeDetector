@@ -1,4 +1,4 @@
-package com.ikanoshiokara.swingdetector
+package com.ikanoshiokara.shakedetector
 
 import android.content.Context
 import android.hardware.Sensor

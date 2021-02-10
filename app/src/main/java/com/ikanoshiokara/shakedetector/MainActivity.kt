@@ -1,10 +1,9 @@
-package com.ikanoshiokara.swingdetector
+package com.ikanoshiokara.shakedetector
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import kotlinx.android.synthetic.main.activity_main.*
-import com.ikanoshiokara.swingdetector.ShakeManager.ShakeListener
+import com.ikanoshiokara.shakedetector.ShakeManager.ShakeListener
 
 class MainActivity : AppCompatActivity(){
     private lateinit var shakeManager: ShakeManager
