@@ -2,47 +2,47 @@ package com.ikanoshiokara.swingdetector
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
+import com.ikanoshiokara.swingdetector.ShakeManager.ShakeListener
 
-class MainActivity : AppCompatActivity(), SensorEventListener {
-    private lateinit var sensorManager: SensorManager
+class MainActivity : AppCompatActivity(){
+    private lateinit var shakeManager: ShakeManager
+    private val mListener: ShakeListener = object: ShakeListener{
+        override fun onGestureDetected(ShakeType:Int, ShakeCount: Int){
+            when(ShakeType){
+                1 -> {
+                    Log.d("App", "Type: SLASH_LEFT, Shake: ${ShakeCount}")
+                }
+                2 -> {
+                    Log.d("App", "Type: SLASH_RIGHT, Shake: ${ShakeCount}")
+                }
+                3 -> {
+                    Log.d("App", "Type: SLASH_UP, Shake: ${ShakeCount}")
+                }
+                4 -> {
+                    Log.d("App", "Type: SLASH_DOWN, Shake: ${ShakeCount}")
+                }
+                5 -> {
+                    Log.d("App", "Type: SHAKE, Shake: ${ShakeCount}")
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        shakeManager = ShakeManager(this, mListener)
     }
 
     override fun onResume() {
         super.onResume()
-        var accel: Sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_NORMAL)
-        //sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
-        //sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_UI)
+        shakeManager.startDetection()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
-    }
-
-    override fun onSensorChanged(event: SensorEvent?) {
-        if(event == null) return
-
-        if(event.sensor.type == Sensor.TYPE_ACCELEROMETER){
-            view.setText("加速度センサー\n"
-                    + "X: ${event.values[0]}\n"
-                    + "Y: ${event.values[1]}\n"
-                    + "Z: ${event.values[2]}\n")
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-
+        shakeManager.stopDetection()
     }
 }

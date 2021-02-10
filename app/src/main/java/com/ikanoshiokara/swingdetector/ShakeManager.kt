@@ -61,9 +61,11 @@ class ShakeManager(context: Context, listener: ShakeListener) {
             when(s.type){
                 Sensor.TYPE_GRAVITY-> {
                     mSensorManager.registerListener(mAccelListener, s, SensorManager.SENSOR_DELAY_UI)
+                    //mSensorManager.registerListener(mAccelListener, s, SensorManager.SENSOR_DELAY_NORMAL)
                 }
                 Sensor.TYPE_LINEAR_ACCELERATION -> {
                     mSensorManager.registerListener(mAccelListener, s, SensorManager.SENSOR_DELAY_UI)
+                    //mSensorManager.registerListener(mAccelListener, s, SensorManager.SENSOR_DELAY_NORMAL)
                 }
             }
         }
