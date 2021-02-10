@@ -33,6 +33,7 @@ class ShakeManager(context: Context, listener: ShakeListener) {
     private var mShakeAfterFlag: Boolean = false
     private var mShakeDetecting: Boolean = false
 
+    //shake用の山
     private var mTmpPoint: Float = 0.0f
     private var mMountPoints: MutableList<Float> = mutableListOf()
 
@@ -55,6 +56,7 @@ class ShakeManager(context: Context, listener: ShakeListener) {
         private const val NON_DETECTION_TIME: Long = 600
     }
 
+    //必要なSensorの登録
     fun startDetection(){
         val sensors: List<Sensor> = mSensorManager.getSensorList(Sensor.TYPE_ALL)
         for (s in sensors){
@@ -71,10 +73,12 @@ class ShakeManager(context: Context, listener: ShakeListener) {
         }
     }
 
+    //Sensorの登録削除
     fun stopDetection(){
         mSensorManager.unregisterListener(mAccelListener)
     }
 
+    //SensorEventListenerの作成
     private val mAccelListener: SensorEventListener = object: SensorEventListener{
         override fun onSensorChanged(event: SensorEvent?) {
             if (event?.sensor!!.type == Sensor.TYPE_GRAVITY) {
@@ -152,10 +156,12 @@ class ShakeManager(context: Context, listener: ShakeListener) {
                         }
                     }
                     if(mLinearAccelZ < 0 && mTmpPoint > 2){
+                        //暫定な山を確定させる
                         mMountPoints.add(mTmpPoint)
                         mTmpPoint = 1.0f
 
-                        if(mMountPoints.size > 2){
+                        //山が2つ以上あればshake
+                        if(mMountPoints.size >= 2){
                             mGestureType = GESTURE_TYPE_SHAKE
                             mListener.onGestureDetected(mGestureType, mMountPoints.size)
                         }
@@ -165,11 +171,13 @@ class ShakeManager(context: Context, listener: ShakeListener) {
             }
         }
 
+        //センサーの設定変えたときのやつ SensorEventListener作成の都合上必要
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
 
         }
     }
 
+    //ベクトルの大きさ
     private fun calcVectorLength(valX: Float, valY: Float, valZ: Float): Float{
         val a = valX.toDouble()
         val b = valY.toDouble()
@@ -177,8 +185,12 @@ class ShakeManager(context: Context, listener: ShakeListener) {
         return sqrt(a.pow(2.0) + b.pow(2.0) + c.pow(2.0)).toFloat()
     }
 
+    //独自Listener
     interface ShakeListener{
+        //振れ検知時に投げられる
         fun onGestureDetected(ShakeType:Int, ShakeCount: Int)
+
+        //なんらかのログ出すときに使う
         //fun onMessage(message: String)
     }
 }
