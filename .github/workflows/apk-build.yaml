@@ -28,7 +28,7 @@ jobs:
         id: version
         env: 
           REF: ${{ github.ref }}
-        run: echo ::set-output name=VERSION::${REF#release/v}
+        run: echo ::set-output name=VERSION::${REF#refs/heads/release/v}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
